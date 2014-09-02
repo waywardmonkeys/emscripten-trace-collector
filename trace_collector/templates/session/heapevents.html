@@ -45,6 +45,7 @@
   function drawCharts() {
     var d = {
       cols: [
+        {id: 'frame_id', label: 'Frame', type: 'number'},
         {id: 'id', label: 'ID', type: 'number'},
         {id: 'timestamp', label: 'Timestamp', type: 'number', p: {'role': 'domain'}},
         {id: 'event', label: 'Event', type: 'string'},
@@ -62,6 +63,7 @@
       $.each(response.data, function(key, entry) {
         d.rows.push({
           c: [
+            {v: entry.frame_id},
             {v: entry.event_id},
             {v: entry.timestamp, f: entry.timestamp.toFixed(3).toString() + 'ms'},
             {v: entry.event},
@@ -82,7 +84,7 @@
         'controlType': 'ChartRangeFilter',
         'containerId': 'table-heap-events-timestamp-filter',
         'options': {
-          'filterColumnIndex': 1,
+          'filterColumnIndex': 2,
           'ui': {
             'chartType': 'AreaChart',
             'chartOptions': {
@@ -94,7 +96,7 @@
               }
             },
             'chartView': {
-              'columns': [1, 9]
+              'columns': [2, 10]
             },
             'labelStacking': 'vertical'
           }
@@ -105,7 +107,7 @@
         'controlType': 'NumberRangeFilter',
         'containerId': 'table-heap-events-size-filter',
         'options': {
-          'filterColumnIndex': 4,
+          'filterColumnIndex': 5,
           'ui': {
             'labelStacking': 'vertical'
           }
@@ -116,7 +118,7 @@
         'controlType': 'NumberRangeFilter',
         'containerId': 'table-heap-events-lifetime-filter',
         'options': {
-          'filterColumnIndex': 6,
+          'filterColumnIndex': 7,
           'ui': {
             'labelStacking': 'vertical'
           }
@@ -127,7 +129,7 @@
         'controlType': 'StringFilter',
         'containerId': 'table-heap-events-datatype-filter',
         'options': {
-          'filterColumnIndex': 5,
+          'filterColumnIndex': 6,
           'ui': {
             'labelStacking': 'vertical'
           }
@@ -138,7 +140,7 @@
         'controlType': 'StringFilter',
         'containerId': 'table-heap-events-address-filter',
         'options': {
-          'filterColumnIndex': 3,
+          'filterColumnIndex': 4,
           'matchType': 'any',
           'ui': {
             'labelStacking': 'vertical'
@@ -156,7 +158,7 @@
           'pageSize': 100
         },
         'view': {
-          'columns': [0, 1, 2, 3, 4, 5, 6, 7, 8]
+          'columns': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         }
       });
 

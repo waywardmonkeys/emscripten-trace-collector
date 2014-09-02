@@ -20,7 +20,7 @@ class HeapView(object):
     if entry[0] == events.ALLOCATE:
       address = entry[2]
       size = entry[3]
-      he = HeapEntry(self.next_event_id(), EVENT_ALLOCATE, entry[1], address, size, session.context)
+      he = HeapEntry(session.FRAME_ID, self.next_event_id(), EVENT_ALLOCATE, entry[1], address, size, session.context)
       self.allocated_memory = self.allocated_memory + size
       he.allocated_memory = self.allocated_memory
       self.entries.append(he)
@@ -31,7 +31,7 @@ class HeapView(object):
     elif entry[0] == events.FREE:
       timestamp = entry[1]
       address = entry[2]
-      freeEntry = HeapEntry(self.next_event_id(), EVENT_FREE, timestamp, address, 0, session.context)
+      freeEntry = HeapEntry(session.FRAME_ID, self.next_event_id(), EVENT_FREE, timestamp, address, 0, session.context)
       self.entries.append(freeEntry)
       oldEntry = self.entries_by_address.get(address)
       if oldEntry:
@@ -78,10 +78,11 @@ class HeapView(object):
 
 class HeapEntry(json.Serializable):
   __slots__ = [
-    'event_id', 'event', 'timestamp', 'address', 'size', 'type', 'context',
-    'lifetime', 'matching_event_id', 'allocated_memory'
+    'frame_id', 'event_id', 'event', 'timestamp', 'address', 'size', 'type',
+    'context', 'lifetime', 'matching_event_id', 'allocated_memory'
   ]
-  def __init__(self, event_id, event, timestamp, address, size, context):
+  def __init__(self, frame_id, event_id, event, timestamp, address, size, context):
+    self.frame_id = frame_id
     self.event_id = event_id
     self.event = event
     self.timestamp = timestamp
@@ -95,6 +96,7 @@ class HeapEntry(json.Serializable):
 
   def serialize(self):
     return {
+      'frame_id': self.frame_id,
       'event_id': self.event_id,
       'event': self.event,
       'timestamp': self.timestamp,

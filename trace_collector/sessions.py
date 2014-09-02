@@ -23,6 +23,7 @@ def session(sessionID):
 
 class Session(object):
   def __init__(self, sessionID):
+    self.FRAME_ID = 0
     self.sessionID = sessionID
     self.name = sessionID
     self.application = 'unknown'
@@ -39,6 +40,11 @@ class Session(object):
     self.context = ContextNode(None, 'Root')
     ## Cached data ##
     self.peak_allocated = 0
+
+
+  def next_frame_id(self):
+    self.FRAME_ID = self.FRAME_ID + 1
+    return self.FRAME_ID
 
 
   def update(self, entry):
@@ -75,7 +81,7 @@ class Session(object):
         print 'self.currentFrame is not None!'
         self.currentFrame.complete(entry[1])
         self.frames.append(self.currentFrame)
-      self.currentFrame = SessionFrame(entry[1])
+      self.currentFrame = SessionFrame(self.next_frame_id(), entry[1])
     elif self.currentFrame:
       self.currentFrame.update(entry, self.heapView)
     ### Update views ###
@@ -109,11 +115,12 @@ class SessionError(object):
 
 class SessionFrame(object):
   __slots__ = [
-    'start', 'end', 'duration', 'alloc_count',
+    'frame_id', 'start', 'end', 'duration', 'alloc_count',
     'alloc_bytes', 'free_count', 'free_bytes',
     'delta_bytes'
   ]
-  def __init__(self, timestamp):
+  def __init__(self, frame_id, timestamp):
+    self.frame_id = frame_id
     self.start = timestamp
     self.end = 0
     self.duration = 0

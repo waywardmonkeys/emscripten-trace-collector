@@ -15,6 +15,7 @@
 <table id="frames" class="table table-striped table-condensed">
   <thead>
     <tr>
+      <th rowspan="2">ID</th>
       <th rowspan="2">Start</th>
       <th rowspan="2">Duration</th>
       <th rowspan="2">&plusmn; Bytes</th>
@@ -31,6 +32,7 @@
   <tbody>
   {% for frame in session.frames -%}
     <tr>
+      <td>{{ frame.frame_id }}</td>
       <td>{{ frame.start|round(3) }}</td>
       <td>{{ frame.duration|round(3) }}</td>
       <td>{{ frame.delta_bytes }}</td>
@@ -40,7 +42,7 @@
       <td>{{ frame.free_bytes }}</td>
     </tr>
   {% else -%}
-    <tr><td colspan="7">No frames found.</td></tr>
+    <tr><td colspan="8">No frames found.</td></tr>
   {% endfor -%}
   </tbody>
 </table>
