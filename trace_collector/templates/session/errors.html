@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block pagetitle %}Errors{% endblock %}
+{% block pagesubtitle %}{{ session.name }}&mdash;{{ session.application }}&mdash;{{ session.username }}{% endblock %}
+{% block navbar %}
+  <ul class="nav nav-sidebar">
+    <li><a href="/session/{{ session.sessionID }}/">Overview</a></li>
+    <li><a href="/session/{{ session.sessionID }}/heap/">Heap View</a></li>
+    <li><a href="/session/{{ session.sessionID }}/heapevents/">Heap Events</a></li>
+    <li><a href="/session/{{ session.sessionID }}/log_messages/">Log Messages</a></li>
+    <li><a href="/session/{{ session.sessionID }}/frames/">Frames</a></li>
+    <li class="active"><a href="/session/{{ session.sessionID }}/errors/">Errors <span class="badge pull-right">{{ session.errors|length }}</span></a></li>
+  </ul>
+{% endblock %}
+{% block body %}
+<table class="table table-striped table-condensed">
+  <thead>
+    <th>Timestamp</th>
+    <th>Error Message</th>
+    <th>Callstack</th>
+  </thead>
+  <tbody>
+  {% for error in session.errors -%}
+    <tr>
+      <td>{{ error.timestamp|round(3) }}</td>
+      <td>{{ error.error }}</td>
+      <td><pre>{{ error.callstack }}</pre></td>
+    </tr>
+  {% else -%}
+    <tr><td colspan="3">No errors found.</td></tr>
+  {% endfor -%}
+  </tbody>
+</table>
+{% endblock %}

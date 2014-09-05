@@ -1,0 +1,170 @@
+{% extends "layout.html" %}
+{% block pagetitle %}Heap Events{% endblock %}
+{% block pagesubtitle %}{{ session.name }}&mdash;{{ session.application }}&mdash;{{ session.username }}{% endblock %}
+{% block navbar %}
+  <ul class="nav nav-sidebar">
+    <li><a href="/session/{{ session.sessionID }}/">Overview</a></li>
+    <li><a href="/session/{{ session.sessionID }}/heap/">Heap View</a></li>
+    <li class="active"><a href="/session/{{ session.sessionID }}/heapevents/">Heap Events</a></li>
+    <li><a href="/session/{{ session.sessionID }}/log_messages/">Log Messages</a></li>
+    <li><a href="/session/{{ session.sessionID }}/frames/">Frames</a></li>
+    <li><a href="/session/{{ session.sessionID }}/errors/">Errors <span class="badge pull-right">{{ session.errors|length }}</span></a></li>
+  </ul>
+{% endblock %}
+{% block body %}
+<div id="table-heap-events-dashboard">
+  <div class="row">
+    <div class="col-md-6">
+      <div id="table-heap-events-size-filter"></div>
+      <div id="table-heap-events-lifetime-filter"></div>
+    </div>
+    <div class="col-md-6">
+      <div id="table-heap-events-datatype-filter"></div>
+      <div id="table-heap-events-address-filter"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <div id="table-heap-events-timestamp-filter"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div id="table-heap-events">
+      <div class="spinner">
+        <div class="dot1"></div>
+        <div class="dot2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extrahead %}
+<script type="text/javascript">
+  google.load('visualization', '1', {packages:['corechart', 'table', 'controls']});
+  google.setOnLoadCallback(drawCharts);
+  function drawCharts() {
+    var d = {
+      cols: [
+        {id: 'id', label: 'ID', type: 'number'},
+        {id: 'timestamp', label: 'Timestamp', type: 'number', p: {'role': 'domain'}},
+        {id: 'event', label: 'Event', type: 'string'},
+        {id: 'address', label: 'Address', type: 'number'},
+        {id: 'size', label: 'Size', type: 'number'},
+        {id: 'type', label: 'Data Type', type: 'string'},
+        {id: 'lifetime', label: 'Lifetime', type: 'number'},
+        {id: 'context', label: 'Context', type: 'string'},
+        {id: 'matching_id', label: 'Matching ID', type: 'number'},
+        {id: 'allocated_memory', label: 'Allocated Memory', type: 'number'}
+      ],
+      rows: []
+    }
+    $.getJSON('/api/v1/session/{{ session.sessionID }}/heap/events/', function(response) {
+      $.each(response.data, function(key, entry) {
+        d.rows.push({
+          c: [
+            {v: entry.event_id},
+            {v: entry.timestamp, f: entry.timestamp.toFixed(3).toString() + 'ms'},
+            {v: entry.event},
+            {v: entry.address, f: '<code>0x' + ('00000000' + entry.address.toString(16)).substr(-8) + '</code>'},
+            {v: entry.size},
+            entry.type && {v: entry.type} || null,
+            {v: entry.lifetime || 0, f: (entry.lifetime && (entry.lifetime.toFixed(3).toString() + 'ms')) || '&infin;'} || null,
+            entry.context && {v: entry.context, p: {style: 'white-space: nowrap'}} || null,
+            entry.matching_event_id && {v: entry.matching_event_id} || null,
+            {v: entry.allocated_memory},
+          ],
+        });
+      });
+
+      var dashboard = new google.visualization.Dashboard(document.getElementById('table-heap-events-dashboard'));
+
+      var timestampRangeFilter = new google.visualization.ControlWrapper({
+        'controlType': 'ChartRangeFilter',
+        'containerId': 'table-heap-events-timestamp-filter',
+        'options': {
+          'filterColumnIndex': 1,
+          'ui': {
+            'chartType': 'AreaChart',
+            'chartOptions': {
+              'hAxis': {
+                'format': '#ms'
+              },
+              'legend': {
+                'position': 'top'
+              }
+            },
+            'chartView': {
+              'columns': [1, 9]
+            },
+            'labelStacking': 'vertical'
+          }
+        }
+      });
+
+      var sizeRangeFilter = new google.visualization.ControlWrapper({
+        'controlType': 'NumberRangeFilter',
+        'containerId': 'table-heap-events-size-filter',
+        'options': {
+          'filterColumnIndex': 4,
+          'ui': {
+            'labelStacking': 'vertical'
+          }
+        }
+      });
+
+      var lifetimeRangeFilter = new google.visualization.ControlWrapper({
+        'controlType': 'NumberRangeFilter',
+        'containerId': 'table-heap-events-lifetime-filter',
+        'options': {
+          'filterColumnIndex': 6,
+          'ui': {
+            'labelStacking': 'vertical'
+          }
+        }
+      });
+
+      var datatypeFilter = new google.visualization.ControlWrapper({
+        'controlType': 'StringFilter',
+        'containerId': 'table-heap-events-datatype-filter',
+        'options': {
+          'filterColumnIndex': 5,
+          'ui': {
+            'labelStacking': 'vertical'
+          }
+        }
+      });
+
+      var addressFilter = new google.visualization.ControlWrapper({
+        'controlType': 'StringFilter',
+        'containerId': 'table-heap-events-address-filter',
+        'options': {
+          'filterColumnIndex': 3,
+          'matchType': 'any',
+          'ui': {
+            'labelStacking': 'vertical'
+          },
+          'useFormattedValue': true
+        }
+      });
+
+      var heapEventTable = new google.visualization.ChartWrapper({
+        'chartType': 'Table',
+        'containerId': 'table-heap-events',
+        'options': {
+          'allowHtml': true,
+          'page': 'enable',
+          'pageSize': 100
+        },
+        'view': {
+          'columns': [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        }
+      });
+
+      dashboard.bind([timestampRangeFilter, sizeRangeFilter, lifetimeRangeFilter, datatypeFilter, addressFilter], heapEventTable);
+
+      var data = new google.visualization.DataTable(d);
+      dashboard.draw(data);
+    });
+  }
+</script>
+{% endblock %}

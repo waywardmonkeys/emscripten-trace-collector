@@ -1,0 +1,240 @@
+{% extends "layout.html" %}
+{% block pagetitle %}Heap View{% endblock %}
+{% block pagesubtitle %}{{ session.name }}&mdash;{{ session.application }}&mdash;{{ session.username }}{% endblock %}
+{% block navbar %}
+  <ul class="nav nav-sidebar">
+    <li><a href="/session/{{ session.sessionID }}/">Overview</a></li>
+    <li class="active"><a href="/session/{{ session.sessionID }}/heap/">Heap View</a></li>
+    <li><a href="/session/{{ session.sessionID }}/heapevents/">Heap Events</a></li>
+    <li><a href="/session/{{ session.sessionID }}/log_messages/">Log Messages</a></li>
+    <li><a href="/session/{{ session.sessionID }}/frames/">Frames</a></li>
+    <li><a href="/session/{{ session.sessionID }}/errors/">Errors <span class="badge pull-right">{{ session.errors|length }}</span></a></li>
+  </ul>
+{% endblock %}
+{% block body %}
+<h2 class="sub-header">Allocations</h2>
+<div class="row">
+  <div class="col-md-12">
+    <h3 class="sub-header">By Size</h3>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    <div id="total-heap-contents-size" style="height: 300px;">
+      <div class="spinner">
+        <div class="dot1"></div>
+        <div class="dot2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div id="live-heap-contents-size" style="height: 300px;">
+      <div class="spinner">
+        <div class="dot1"></div>
+        <div class="dot2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <h3 class="sub-header">By Data Type</h3>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    <div id="total-heap-contents-datatype" style="height: 300px;">
+      <div class="spinner">
+        <div class="dot1"></div>
+        <div class="dot2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div id="live-heap-contents-datatype" style="height: 300px;">
+      <div class="spinner">
+        <div class="dot1"></div>
+        <div class="dot2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <h2 class="sub-header">Heap Fragmentation</h2>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    <div id="fragmentation-size" style="height: 300px;">
+      <div class="spinner">
+        <div class="dot1"></div>
+        <div class="dot2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div id="fragmentation-gauge" style="height: 300px;">
+      <div class="spinner">
+        <div class="dot1"></div>
+        <div class="dot2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extrahead %}
+<script type="text/javascript">
+  google.load('visualization', '1', {packages:['corechart', 'gauge', 'table']});
+  google.setOnLoadCallback(drawCharts);
+  function drawCharts() {
+    var tad = {
+      cols: [
+        {id: 'timestamp', label: 'Timestamp', type: 'number', p: {'role': 'domain'}},
+        {id: 'address', label: 'Address', type: 'number'},
+        {id: 'size', label: 'Size', type: 'number'},
+        {id: 'type', label: 'Data Type', type: 'string'},
+        {id: 'allocated_memory', label: 'Allocated Memory', type: 'number'}
+      ],
+      rows: []
+    };
+    var lad = {
+      cols: [
+        {id: 'timestamp', label: 'Timestamp', type: 'number', p: {'role': 'domain'}},
+        {id: 'address', label: 'Address', type: 'number'},
+        {id: 'size', label: 'Size', type: 'number'},
+        {id: 'type', label: 'Data Type', type: 'string'},
+        {id: 'allocated_memory', label: 'Allocated Memory', type: 'number'}
+      ],
+      rows: []
+    };
+    var hd = {
+      cols: [
+        {id: 'address', label: 'Address', type: 'number', p: {'role': 'domain'}},
+        {id: 'size', label: 'Size', type: 'number'}
+      ],
+      rows: []
+    };
+    $.getJSON('/api/v1/session/{{ session.sessionID }}/heap/layout/', function(response) {
+      var sizeOfHoles = 0;
+      var topOfAllocatedArea = 0;
+      $.each(response.all_allocations, function(key, entry) {
+        tad.rows.push({
+          c: [
+            {v: entry.timestamp, f: entry.timestamp.toFixed(3).toString() + 'ms'},
+            {v: entry.address, f: '<code>0x' + ('00000000' + entry.address.toString(16)).substr(-8) + '</code>'},
+            {v: entry.size},
+            {v: entry.type || 'unknown'},
+            {v: entry.allocated_memory},
+          ],
+        });
+      });
+      $.each(response.live_allocations, function(key, entry) {
+        topOfAllocatedArea = Math.max(topOfAllocatedArea, entry.address + entry.size);
+        lad.rows.push({
+          c: [
+            {v: entry.timestamp, f: entry.timestamp.toFixed(3).toString() + 'ms'},
+            {v: entry.address, f: '<code>0x' + ('00000000' + entry.address.toString(16)).substr(-8) + '</code>'},
+            {v: entry.size},
+            {v: entry.type || 'unknown'},
+            {v: entry.allocated_memory},
+          ],
+        });
+      });
+      $.each(response.holes, function(key, entry) {
+        sizeOfHoles += entry[1];
+        hd.rows.push({
+          c: [
+            {v: entry[0], f: '<code>0x' + ('00000000' + entry[0].toString(16)).substr(-8) + '</code>'},
+            {v: entry[1]}
+          ]
+        });
+      });
+
+      var totalAllocationData = new google.visualization.DataTable(tad);
+      var totalAllocationSizeView = new google.visualization.DataView(totalAllocationData);
+      totalAllocationSizeView.setColumns([2]);
+
+      var totalAllocationSizeOptions = {
+        title: 'Total Allocations',
+        histogram: {
+        },
+        legend: {
+          position: 'none'
+        }
+      }
+      var totalBySize = new google.visualization.Histogram(document.getElementById('total-heap-contents-size'));
+      totalBySize.draw(totalAllocationSizeView, totalAllocationSizeOptions);
+
+      var liveAllocationData = new google.visualization.DataTable(lad);
+      var liveAllocationSizeView = new google.visualization.DataView(liveAllocationData);
+      liveAllocationSizeView.setColumns([2]);
+
+      var liveAllocationSizeOptions = {
+        title: 'Live Allocations',
+        histogram: {
+        },
+        legend: {
+          position: 'none'
+        }
+      }
+      var liveBySize = new google.visualization.Histogram(document.getElementById('live-heap-contents-size'));
+      liveBySize.draw(liveAllocationSizeView, liveAllocationSizeOptions);
+
+      /* By data type */
+
+      var totalDatatypeOptions = {
+        title: 'Total Allocations',
+        legend: {
+          position: 'none'
+        }
+      };
+
+      var totalByDatatype = google.visualization.data.group(totalAllocationData, [3], [{ column: 0, aggregation: google.visualization.data.count, type: 'number', label: 'Count' }]);
+      var totalByDatatypeChart = new google.visualization.ColumnChart(document.getElementById('total-heap-contents-datatype'));
+      totalByDatatypeChart.draw(totalByDatatype, totalDatatypeOptions);
+
+      var liveDatatypeOptions = {
+        title: 'Live Allocations',
+        legend: {
+          position: 'none'
+        }
+      };
+
+      var liveByDatatype = google.visualization.data.group(liveAllocationData, [3], [{ column: 0, aggregation: google.visualization.data.count, type: 'number', label: 'Count' }]);
+      var liveByDatatypeChart = new google.visualization.ColumnChart(document.getElementById('live-heap-contents-datatype'));
+      liveByDatatypeChart.draw(liveByDatatype, liveDatatypeOptions);
+
+      /* Fragmentation data */
+      var holesData = new google.visualization.DataTable(hd);
+      var gaps = google.visualization.data.group(holesData, [1], [{column: 0, aggregation: google.visualization.data.count, type: 'number', label: 'Count' }]);
+
+      var holesOptions = {
+        title: 'Fragmentation',
+        legend: {
+          position: 'none'
+        }
+      };
+
+      var holesBySize = new google.visualization.Table(document.getElementById('fragmentation-size'));
+      holesBySize.draw(gaps, holesOptions);
+
+      var fragmentation = Math.round((sizeOfHoles / Math.max(1, topOfAllocatedArea)) * 100);
+      var fragmentationData = google.visualization.arrayToDataTable([
+        ['Label', 'Value'],
+        ['', fragmentation]
+      ]);
+
+      var fragmentationGaugeOptions = {
+        width: 250, height: 250,
+        redFrom: 50, redTo: 100,
+        yellowFrom: 25, yellowTo: 50,
+        minorTicks: 5
+      };
+
+      var fragmentationGauge = new google.visualization.Gauge(document.getElementById('fragmentation-gauge'));
+      fragmentationGauge.draw(fragmentationData, fragmentationGaugeOptions);
+    });
+  }
+</script>
+{% endblock %}

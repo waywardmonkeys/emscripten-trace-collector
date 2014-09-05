@@ -1,0 +1,141 @@
+{% extends "layout.html" %}
+{% block pagetitle %}Overview{% endblock %}
+{% block pagesubtitle %}{{ session.name }}&mdash;{{ session.application }}&mdash;{{ session.username }}{% endblock %}
+{% block navbar %}
+  <ul class="nav nav-sidebar">
+    <li class="active"><a href="/session/{{ session.sessionID }}/">Overview</a></li>
+    <li><a href="/session/{{ session.sessionID }}/heap/">Heap View</a></li>
+    <li><a href="/session/{{ session.sessionID }}/heapevents/">Heap Events</a></li>
+    <li><a href="/session/{{ session.sessionID }}/log_messages/">Log Messages</a></li>
+    <li><a href="/session/{{ session.sessionID }}/frames/">Frames</a></li>
+    <li><a href="/session/{{ session.sessionID }}/errors/">Errors <span class="badge pull-right">{{ session.errors|length }}</span></a></li>
+  </ul>
+{% endblock %}
+{% block body %}
+<div class="row">
+  <div class="col-md-6">
+    <h2 class="sub-header">Allocation Summary</h2>
+    <div id="table-allocation-summary"></div>
+  </div>
+  <div class="col-md-6">
+    <h2 class="sub-header">Memory Usage</h2>
+    <div id="chart-memory-usage"></div>
+    <div id="table-memory-usage"></div>
+  </div>
+</div>
+<div class="row">
+  <h2 class="sub-header">Memory Usage History</h2>
+  <div id="chart-memory-usage-history"></div>
+</div>
+{% endblock %}
+{% block extrahead %}
+<script type="text/javascript">
+  google.load('visualization', '1', {packages:['corechart', 'table']});
+  google.setOnLoadCallback(drawCharts);
+  function drawCharts() {
+    var allocationSummaryData = new google.visualization.DataTable();
+    allocationSummaryData.addColumn('string', '');
+    allocationSummaryData.addColumn('number', 'Bytes');
+    allocationSummaryData.addColumn('number', '# of ops');
+    allocationSummaryData.addRows([
+      ['Current', {
+          v: {{ summary.current_allocated }},
+          f: '{{ summary.current_allocated|filesizeformat(True) }}'
+        },{
+          v: {{ summary.current_allocations }}
+        }
+      ],
+      ['Peak', {
+          v: {{ summary.peak_allocated }},
+          f: '{{ summary.peak_allocated|filesizeformat(True) }}'
+        },{
+          v: {{ summary.peak_allocations }}
+        }
+      ],
+      ['Total', {
+          v: {{ summary.total_allocated }},
+          f: '{{ summary.total_allocated|filesizeformat(True) }}'
+        },{
+          v: {{ summary.total_allocations }}
+        }
+      ]
+    ]);
+
+    var tableOptions = {
+      sort: 'disable'
+    };
+    var allocationSummaryTable = new google.visualization.Table(document.getElementById('table-allocation-summary'));
+    allocationSummaryTable.draw(allocationSummaryData, tableOptions);
+
+    var currentMemoryLayoutData = new google.visualization.DataTable();
+    currentMemoryLayoutData.addColumn('string', 'Type');
+    currentMemoryLayoutData.addColumn('number', 'Bytes');
+    currentMemoryLayoutData.addRows([
+      ['Static', {
+        v: {{ memory_layout.current.static_top - memory_layout.current.static_base }},
+        f: '{{ (memory_layout.current.static_top - memory_layout.current.static_base)|filesizeformat(True) }}'
+      }],
+      ['Stack', {
+        v: {{ memory_layout.current.stack_top - memory_layout.current.stack_base }},
+        f: '{{ (memory_layout.current.stack_top - memory_layout.current.stack_base)|filesizeformat(True) }}'
+      }],
+      ['Available Stack', {
+        v: {{ memory_layout.current.stack_max - memory_layout.current.stack_top }},
+        f: '{{ (memory_layout.current.stack_max - memory_layout.current.stack_top)|filesizeformat(True) }}'
+      }],
+      ['Dynamic', {
+        v: {{ memory_layout.current.dynamic_top - memory_layout.current.dynamic_base }},
+        f: '{{ (memory_layout.current.dynamic_top - memory_layout.current.dynamic_base)|filesizeformat(True) }}'
+      }],
+      ['Available Dynamic', {
+        v: {{ memory_layout.current.total_memory - memory_layout.current.dynamic_top }},
+        f: '{{ (memory_layout.current.total_memory - memory_layout.current.dynamic_top)|filesizeformat(True) }}'
+      }],
+      ['Total', {
+        v: {{ memory_layout.current.total_memory }},
+        f: '{{ memory_layout.current.total_memory|filesizeformat(True) }}'
+      }]
+    ]);
+
+    var tableOptions = {
+      sort: 'disable'
+    };
+    var table = new google.visualization.Table(document.getElementById('table-memory-usage'));
+    table.draw(currentMemoryLayoutData, tableOptions);
+
+    mhdata = new google.visualization.DataTable();
+    mhdata.addColumn('number', 'Timestamp');
+    mhdata.addColumn('number', 'Static');
+    mhdata.addColumn('number', 'Stack');
+    mhdata.addColumn('number', 'Available Stack');
+    mhdata.addColumn('number', 'Dynamic');
+    mhdata.addColumn('number', 'Available Dynamic');
+    mhdata.addRows([
+    {% for entry in memory_layout.snapshots %}
+      [
+        {v: {{ entry.timestamp }}, f: '{{ entry.timestamp|round(3) }}ms'},
+        {v: {{ entry.static_top - entry.static_base }},   f: '{{ (entry.static_top - entry.static_base)|filesizeformat(True) }}'},
+        {v: {{ entry.stack_top - entry.stack_base }},     f: '{{ (entry.stack_top - entry.stack_base)|filesizeformat(True) }}'},
+        {v: {{ entry.stack_max - entry.stack_top }},      f: '{{ (entry.stack_max - entry.stack_top)|filesizeformat(True) }}'},
+        {v: {{ entry.dynamic_top - entry.dynamic_base }}, f: '{{ (entry.dynamic_top - entry.dynamic_base)|filesizeformat(True) }}'},
+        {v: {{ entry.total_memory - entry.dynamic_top }}, f: '{{ (entry.total_memory - entry.dynamic_top)|filesizeformat(True) }}'}
+      ],
+    {% endfor %}
+    ]);
+
+    var mhchartOptions = {
+      focusTarget: 'category',
+      hAxis: {
+        format: '#ms'
+      },
+      isStacked: true,
+      legend: {
+        position: 'top'
+      }
+    }
+
+    var mhchart = new google.visualization.AreaChart(document.getElementById('chart-memory-usage-history'));
+    mhchart.draw(mhdata, mhchartOptions);
+  }
+</script>
+{% endblock %}

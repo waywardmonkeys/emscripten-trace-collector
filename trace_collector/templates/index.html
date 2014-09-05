@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block pagetitle %}Sessions{% endblock %}
+{% block body %}
+<table id="sessions" class="table table-striped table-condensed">
+  <thead>
+    <th>Session ID</th>
+    <th>Application</th>
+    <th>Username</th>
+    <th>Peak<br>Allocated</th>
+    <th>Errors?</th>
+  </thead>
+  <tbody>
+  {% for session in sessions -%}
+    <tr>
+      <td><a href="/session/{{ session.sessionID }}/">{{ session.name }}</a></td>
+      <td>{{ session.application }}</td>
+      <td>{{ session.username }}</td>
+      <td data-order="{{ session.peak_allocated }}">{{ session.peak_allocated|filesizeformat }}</td>
+      {% if session.errors|length > 0 -%}
+      <td class="danger">{{ session.errors|length }}</td>
+      {% else -%}
+      <td class="success" data-order="0">None</td>
+      {%- endif %}
+    </tr>
+  {%- endfor %}
+  </tbody>
+</table>
+{% endblock %}
