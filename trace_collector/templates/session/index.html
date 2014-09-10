@@ -70,6 +70,7 @@
     var currentMemoryLayoutData = new google.visualization.DataTable();
     currentMemoryLayoutData.addColumn('string', 'Type');
     currentMemoryLayoutData.addColumn('number', 'Bytes');
+    {% if memory_layout.current %}
     currentMemoryLayoutData.addRows([
       ['Static', {
         v: {{ memory_layout.current.static_top - memory_layout.current.static_base }},
@@ -96,6 +97,7 @@
         f: '{{ memory_layout.current.total_memory|filesizeformat(True) }}'
       }]
     ]);
+    {% endif %}
 
     var tableOptions = {
       sort: 'disable'
