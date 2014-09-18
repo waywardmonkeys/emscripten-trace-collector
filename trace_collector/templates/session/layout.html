@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block pagesubtitle %}{{ session.name }}&mdash;{{ session.application }}&mdash;{{ session.username }}{% endblock %}
+{% set navigation_bar = [
+    ('/', 'index', 'Overview'),
+    ('/heap/', 'heap-view', 'Heap View'),
+    ('/heapevents/', 'heap-events', 'Heap Events'),
+    ('/log_messages/', 'log-messages', 'Log Messages'),
+    ('/frames/', 'frames', 'Frames'),
+    ('/errors/', 'errors', 'Errors')
+] -%}
+{% set active_page = active_page|default('index') -%}
+{% block navbar %}
+  <ul class="nav nav-sidebar">
+    {% for href, id, caption in navigation_bar -%}
+    <li{% if id == active_page %} class="active"{% endif
+    %}><a href="/session/{{ session.sessionID }}{{ href|e }}">{{ caption|e }}{% if id == 'errors' %} <span class="badge pull-right">{{ session.errors|length }}</span>{% endif %}</a></li>
+    {% endfor -%}
+  </ul>
+{% endblock %}

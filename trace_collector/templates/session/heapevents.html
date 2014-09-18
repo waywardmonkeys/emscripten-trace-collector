@@ -1,16 +1,6 @@
-{% extends "layout.html" %}
+{% extends "session/layout.html" %}
+{% set active_page = "heap-events" %}
 {% block pagetitle %}Heap Events{% endblock %}
-{% block pagesubtitle %}{{ session.name }}&mdash;{{ session.application }}&mdash;{{ session.username }}{% endblock %}
-{% block navbar %}
-  <ul class="nav nav-sidebar">
-    <li><a href="/session/{{ session.sessionID }}/">Overview</a></li>
-    <li><a href="/session/{{ session.sessionID }}/heap/">Heap View</a></li>
-    <li class="active"><a href="/session/{{ session.sessionID }}/heapevents/">Heap Events</a></li>
-    <li><a href="/session/{{ session.sessionID }}/log_messages/">Log Messages</a></li>
-    <li><a href="/session/{{ session.sessionID }}/frames/">Frames</a></li>
-    <li><a href="/session/{{ session.sessionID }}/errors/">Errors <span class="badge pull-right">{{ session.errors|length }}</span></a></li>
-  </ul>
-{% endblock %}
 {% block body %}
 <div id="table-heap-events-dashboard">
   <div class="row">
