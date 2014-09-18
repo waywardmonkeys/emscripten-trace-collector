@@ -86,7 +86,8 @@ if (typeof Slick === "undefined") {
       multiColumnSort: false,
       defaultFormatter: defaultFormatter,
       forceSyncScrolling: false,
-      addNewRowCssClass: "new-row"
+      addNewRowCssClass: "new-row",
+      autoExpandColumns: false,
     };
 
     var columnDefaults = {
@@ -1611,7 +1612,7 @@ if (typeof Slick === "undefined") {
         $viewport.height(viewportH);
       }
 
-      if (options.forceFitColumns) {
+      if (options.forceFitColumns || options.autoExpandColumns) {
         autosizeColumns();
       }
 
