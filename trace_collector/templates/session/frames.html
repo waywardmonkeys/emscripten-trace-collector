@@ -13,6 +13,7 @@
 {% endblock %}
 {% block body %}
 <div id="grid-container">
+  <div id="time-slider"></div>
   <div id="frames" style="height: 100%;"></div>
   <div id="pager" style="height:20px;"></div>
 </div>
@@ -83,6 +84,18 @@
     {% endfor %}
   ];
 
+  var sliderTicks = 50;
+  var minimumStart = 0;
+  var maximumStart = 0;
+  if (data.length > 0) {
+    maximumStart = data[data.length - 1]['start'].toFixed(0);
+  }
+  // Extra math to deal with our being in fractional seconds
+  maximumStart = maximumStart * 1000; // Now in milliseconds
+  maximumStart = Math.ceil(maximumStart / sliderTicks) * sliderTicks;
+  maximumStart = maximumStart / 1000; // Now back in seconds
+
+
   var dataView = new Slick.Data.DataView({ inlineFilters: true });
   var grid = new Slick.Grid("#frames", dataView, columns, options);
   grid.setSelectionModel(new Slick.RowSelectionModel());
@@ -105,20 +118,62 @@
     grid.render();
   });
 
+  function framesFilter(item, args) {
+    if (item['start'] < args.minimumStart) {
+      return false;
+    }
+    if (item['start'] > args.maximumStart) {
+      return false;
+    }
+    return true;
+  }
+
   dataView.beginUpdate();
   dataView.setItems(data);
+  dataView.setFilterArgs({
+    minimumStart: minimumStart,
+    maximumStart: maximumStart,
+  });
+  dataView.setFilter(framesFilter);
   dataView.endUpdate();
 
-  function resize() {
+  function updateFilter() {
+    var values = $("#time-slider").slider("values");
+    dataView.setFilterArgs({
+      minimumStart: values[0],
+      maximumStart: values[1]
+    });
+    dataView.refresh();
+  }
+
+  $("#time-slider").slider({
+    animate: false,
+    range: true,
+    min: minimumStart,
+    max: maximumStart,
+    values: [minimumStart, maximumStart],
+    slide: function(event, ui) {
+      updateFilter();
+    }
+  }).slider("pips", {
+    rest: "label",
+    step: (maximumStart - minimumStart) / sliderTicks,
+    suffix: 'ms'
+  }).slider("float", {
+    suffix: 'ms'
+  });
+
+  function resizeGridContainer() {
     $("#grid-container").height(
       $(window).height() -
+      $("#time-slider").outerHeight(true) -
       $("#navbar").outerHeight() -
       $("#page-header").outerHeight() - 105
     );
     grid.resizeCanvas();
   }
 
-  resize();
-  $(window).resize(resize);
+  resizeGridContainer();
+  $(window).resize(resizeGridContainer);
 </script>
 {% endblock %}
