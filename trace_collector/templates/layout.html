@@ -14,6 +14,9 @@
 
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/c3/0.3.0/c3.min.css">
 
+    <link rel="stylesheet" href="/static/jquery-ui-bootstrap-4c408d9/css/custom-theme/jquery-ui-1.10.3.custom.css">
+    <link rel="stylesheet" href="/static/jquery-ui-bootstrap-4c408d9/assets/css/font-awesome.min.css">
+
     <!-- Google Ajax loader -->
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 
@@ -29,11 +32,23 @@
 
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
 
+    <link rel="stylesheet" href="/static/slickgrid/slick.grid.css" type="text/css"/>
+    <link rel="stylesheet" href="/static/slickgrid/slick-default-theme.css" type="text/css"/>
+    <link rel="stylesheet" href="/static/slickgrid/controls/slick.pager.css" type="text/css"/>
+    <script src="/static/jquery-ui-bootstrap-4c408d9/assets/js/vendor/jquery-ui-1.10.3.custom.min.js"></script>
+    <script src="/static/slickgrid/lib/jquery.event.drag-2.2.js"></script>
+    <script src="/static/slickgrid/slick.core.js"></script>
+    <script src="/static/slickgrid/slick.grid.js"></script>
+    <script src="/static/slickgrid/slick.dataview.js"></script>
+    <script src="/static/slickgrid/controls/slick.pager.js"></script>
+    <script src="/static/slickgrid/plugins/slick.rowmovemanager.js"></script>
+    <script src="/static/slickgrid/plugins/slick.rowselectionmodel.js"></script>
+
     {% block extrahead %}{% endblock %}
   </head>
   <body>
 
-    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div id="navbar" class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container-fluid">
         <div class="navbar-header">
           <a class="navbar-brand" href="/">Trace Collector</a>
@@ -48,7 +63,7 @@
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
 
-        <h1 class="page-header">{{ self.pagetitle() }}<span class="small text-muted pull-right">{% block pagesubtitle %}{% endblock %}</span></h1>
+        <h1 id="page-header" class="page-header">{{ self.pagetitle() }}<span class="small text-muted pull-right">{% block pagesubtitle %}{% endblock %}</span></h1>
 
         {% block body %}{% endblock %}
 

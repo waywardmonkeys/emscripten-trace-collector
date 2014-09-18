@@ -7,6 +7,14 @@ body {
   padding-top: 70px;
 }
 
+/* Work around for conflict between SlickGrid and Bootstrap */
+[class^="slickgrid_"],
+[class^="slickgrid_"] div {
+  -webkit-box-sizing: content-box;
+     -moz-box-sizing: content-box;
+          box-sizing: content-box;
+}
+
 
 /*
  * Global add-ons
