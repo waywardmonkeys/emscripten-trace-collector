@@ -12,24 +12,144 @@
   </ul>
 {% endblock %}
 {% block body %}
-<table id="log_messages" class="table table-striped table-condensed">
-  <thead>
-    <th>Timestamp</th>
-    <th>Channel</th>
-    <th>Event</th>
-    <th>Context</th>
-  </thead>
-  <tbody>
+<div id="grid-container">
+  <div id="time-slider"></div>
+  <div id="log-messages" style="height: 100%;"></div>
+  <div id="pager" style="height: 20px;"></div>
+</div>
+<script type="text/javascript">
+  function MillisecondFormatter(row, cell, value, columnDef, dataContext) {
+    return value.toFixed(3).toString() + ' ms';
+  }
+
+  var columns = [
+    {id: 'timestamp', name: 'Timestamp', field: 'timestamp',
+     sortable: true,
+     minWidth: 100, maxWidth: 120,
+     formatter: MillisecondFormatter,
+     cssClass: 'text-right'},
+    {id: 'context', name: 'Context', field: 'context',
+     width: 150, maxWidth: 200,
+     sortable: true,
+     cssClass: 'text-left'},
+    {id: 'channel', name: 'Channel', field: 'channel',
+     width: 150, maxWidth: 200,
+     sortable: true,
+     cssClass: 'text-left'},
+    {id: 'event', name: 'Event', field: 'event',
+     minWidth: 200,
+     sortable: true,
+     cssClass: 'text-left'},
+  ];
+
+  var options = {
+    enableCellNavigation: true,
+    enableColumnReorder: false,
+    autoExpandColumns: true
+  };
+
+  var data = [
   {% for entry in log_messages.entries -%}
-    <tr>
-      <td>{{ entry[0]|round(3) }}</td>
-      <td>{{ entry[1] }}</td>
-      <td>{{ entry[2] }}</td>
-      <td>{{ entry[3].full_name }}</td>
-    </tr>
-  {% else -%}
-    <tr><td colspan="3">No entries found.</td></tr>
-  {% endfor -%}
-  </tbody>
-</table>
+    {
+      id: {{ loop.index }},
+      timestamp: {{ entry[0] }},
+      channel: "{{ entry[1] }}",
+      event: "{{ entry[2] }}",
+      context: "{{ entry[3].full_name }}",
+    },
+  {% endfor %}
+  ];
+
+  var sliderTicks = 50;
+  var minimumStart = 0;
+  var maximumStart = 0;
+  if (data.length > 0) {
+    maximumStart = data[data.length - 1]['timestamp'].toFixed(0);
+  }
+  // Extra math to deal with our being in fractional seconds
+  maximumStart = maximumStart * 1000; // Now in milliseconds
+  maximumStart = Math.ceil(maximumStart / sliderTicks) * sliderTicks;
+  maximumStart = maximumStart / 1000; // Now back in seconds
+
+
+  var dataView = new Slick.Data.DataView({ inlineFilters: true });
+  var grid = new Slick.Grid("#log-messages", dataView, columns, options);
+  grid.setSelectionModel(new Slick.RowSelectionModel());
+  var pager = new Slick.Controls.Pager(dataView, grid, $("#pager"));
+
+  grid.onSort.subscribe(function(e, args) {
+    var comparer = function(a, b) {
+      return (a[args.sortCol.field] > b[args.sortCol.field]) ? 1 : -1;
+    }
+    dataView.sort(comparer, args.sortAsc);
+  });
+
+  dataView.onRowCountChanged.subscribe(function (e, args) {
+    grid.updateRowCount();
+    grid.render();
+  });
+
+  dataView.onRowsChanged.subscribe(function (e, args) {
+    grid.invalidateRows(args.rows);
+    grid.render();
+  });
+
+  function logMessagesFilter(item, args) {
+    if (item['timestamp'] < args.minimumStart) {
+      return false;
+    }
+    if (item['timestamp'] > args.maximumStart) {
+      return false;
+    }
+    return true;
+  }
+
+  dataView.beginUpdate();
+  dataView.setItems(data);
+  dataView.setFilterArgs({
+    minimumStart: minimumStart,
+    maximumStart: maximumStart,
+  });
+  dataView.setFilter(logMessagesFilter);
+  dataView.endUpdate();
+
+  function updateFilter() {
+    var values = $("#time-slider").slider("values");
+    dataView.setFilterArgs({
+      minimumStart: values[0],
+      maximumStart: values[1]
+    });
+    dataView.refresh();
+  }
+
+  $("#time-slider").slider({
+    animate: false,
+    range: true,
+    min: minimumStart,
+    max: maximumStart,
+    values: [minimumStart, maximumStart],
+    slide: function(event, ui) {
+      updateFilter();
+    }
+  }).slider("pips", {
+    rest: "label",
+    step: (maximumStart - minimumStart) / sliderTicks,
+    suffix: 'ms'
+  }).slider("float", {
+    suffix: 'ms'
+  });
+
+  function resizeGridContainer() {
+    $("#grid-container").height(
+      $(window).height() -
+      $("#time-slider").outerHeight(true) -
+      $("#navbar").outerHeight() -
+      $("#page-header").outerHeight() - 105
+    );
+    grid.resizeCanvas();
+  }
+
+  resizeGridContainer();
+  $(window).resize(resizeGridContainer);
+</script>
 {% endblock %}
