@@ -43,9 +43,9 @@
     {
       id: {{ loop.index }},
       timestamp: {{ entry[0] }},
-      channel: "{{ entry[1] }}",
-      event: "{{ entry[2] }}",
-      context: "{{ entry[3].full_name }}",
+      channel: "{{ entry[1]|safe }}",
+      event: "{{ entry[2]|safe }}",
+      context: "{{ entry[3].full_name|safe }}",
     },
   {% endfor %}
   ];
