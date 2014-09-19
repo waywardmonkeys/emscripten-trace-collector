@@ -96,42 +96,42 @@ body {
 /*
  * Time Slider
  */
-#time-slider {
-  margin-bottom: 3em;
+.pipped-slider {
+  margin-bottom: 4em !important;
 }
 
-#time-slider .ui-slider-pip {
+.pipped-slider .ui-slider-pip {
     width: 1%;
     margin-left: -0.5%;
 }
 
-#time-slider .ui-slider-pip > .ui-slider-label {
+.pipped-slider .ui-slider-pip > .ui-slider-label {
     display: none;
     height: 4px;
 }
 
-#time-slider .ui-slider-pip > .ui-slider-line {
+.pipped-slider .ui-slider-pip > .ui-slider-line {
     background: #aaa;
 }
 
-#time-slider .ui-slider-pip:nth-of-type(5n+1) > .ui-slider-line {
+.pipped-slider .ui-slider-pip:nth-of-type(5n+1) > .ui-slider-line {
     height: 6px;
     background: #777;
 }
 
-#time-slider .ui-slider-pip:nth-of-type(5n+1) > .ui-slider-label {
+.pipped-slider .ui-slider-pip:nth-of-type(5n+1) > .ui-slider-label {
     display: block;
     top: 8px;
     color: #ccc;
     font-size: 0.8em;
 }
 
-#time-slider .ui-slider-pip:nth-of-type(10n+1) > .ui-slider-line {
+.pipped-slider .ui-slider-pip:nth-of-type(10n+1) > .ui-slider-line {
     height: 10px;
     background: #222;
 }
 
-#time-slider .ui-slider-pip:nth-of-type(10n+1) > .ui-slider-label {
+.pipped-slider .ui-slider-pip:nth-of-type(10n+1) > .ui-slider-label {
     display: block;
     top: 12px;
     color: #333;
