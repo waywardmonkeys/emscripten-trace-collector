@@ -56,10 +56,7 @@
   if (data.length > 0) {
     maximumStart = data[data.length - 1]['timestamp'].toFixed(0);
   }
-  // Extra math to deal with our being in fractional seconds
-  maximumStart = maximumStart * 1000; // Now in milliseconds
   maximumStart = Math.ceil(maximumStart / sliderTicks) * sliderTicks;
-  maximumStart = maximumStart / 1000; // Now back in seconds
 
 
   var dataView = new Slick.Data.DataView({ inlineFilters: true });
