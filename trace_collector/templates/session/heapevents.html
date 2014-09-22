@@ -11,7 +11,7 @@
       </div>
       <div class="col-md-4 col-md-offset-1">
         <label for="datatype-filter">Datatype</label>
-        <div id="datatype-filter"></div>
+        <input id="datatype-filter">
       </div>
     </div>
     <div class="row">
@@ -118,6 +118,9 @@
     if (item['size'] > args.maximumSize) {
       return false;
     }
+    if (args.datatype_filter && (item['type'] != args.datatype_filter)) {
+      return false;
+    }
     return true;
   }
 
@@ -133,7 +136,8 @@
       minimumSize: sizeValues[0],
       maximumSize: sizeValues[1],
       minimumTimestamp: timestampValues[0],
-      maximumTimestamp: timestampValues[1]
+      maximumTimestamp: timestampValues[1],
+      datatype_filter: $("#datatype-filter").val()
     });
     dataView.refresh();
   }
@@ -165,8 +169,14 @@
   });
 
   $("#datatype-filter").autocomplete({
-    source: types.keys(),
-  })'
+    source: ["N/A"],
+    change: function(event, ui) {
+      updateFilter();
+    },
+    search: function(event, ui) {
+      updateFilter();
+    }
+  });
 
   function resizeGridContainer() {
     $("#grid-container").height(
@@ -185,11 +195,17 @@
   $.getJSON('/api/v1/session/{{ session.sessionID }}/heap/events/', function(response) {
     var sizeSliderTicks = 20, timeSliderTicks = 50;
     var data = [];
+    var unique = {};
+    var distinct_types = [];
     var minimumSize = 0, maximumSize = 0;
     $.each(response.data, function(key, entry) {
       maximumSize = Math.max(entry['size'] || 0, maximumSize);
       entry['id'] = entry['event_id'];
       data.push(entry);
+      if (entry.type && !unique[entry.type]) {
+        distinct_types.push(entry.type);
+        unique[entry.type] = true;
+      }
     });
     maximumSize = Math.ceil(maximumSize / sizeSliderTicks) * sizeSliderTicks;
     $("#size-slider")
@@ -214,6 +230,8 @@
         step: (maximumTimestamp - minimumTimestamp) / timeSliderTicks,
         suffix: 'ms'
       });
+
+    $("#datatype-filter").autocomplete("option", "source", distinct_types);
 
     dataView.beginUpdate();
     dataView.setItems(data);
