@@ -5,6 +5,26 @@ Trace Collector Server
 A server for collecting tracing data from emscripten-compiled
 applications including memory profiling information.
 
+
+Running The Server
+==================
+
+Once you have set up your environment and installed the
+dependencies as detailed below, you can run the server::
+
+   python ./run-server.py
+
+There is an optional ``gevent`` backed server which can
+be used, but isn't necessary. To run this, you will need
+to install the ``optional-requirements.txt``::
+
+    pip install -r optional-requirements.txt
+
+And then run that server::
+
+    python ./run-gevent-server.py
+
+
 Getting Started
 ===============
 
@@ -30,15 +50,6 @@ ready and using the right virtualenv::
 ``virtualenvwrapper`` and added it to the startup files for
 your shell.)
 
-Now, you can run the server::
-
-    python ./runserver.py
-
-Or run the debug server::
-
-    python ./debugrunserver.py
-
-
 Using virtualenv
 ----------------
 
@@ -51,17 +62,10 @@ Install the dependencies::
 
     pip install -r requirements.txt
 
-Run the server::
+Now, whenever you open a new shell and want to get everything
+ready and using the right virtualenv::
 
     source venv/bin/activate
-    python ./runserver.py
-
-The server can also run in a debug mode that is useful while
-developing it::
-
-    source venv/bin/activate
-    python ./debugrunserver.py
-
 
 Using your global Python install
 --------------------------------
@@ -72,10 +76,5 @@ If not, then install the dependencies::
 
     pip install -r requirements.txt
 
-Run the server::
-
-    python ./runserver.py
-
-Or run the server in debug mode::
-
-    python ./debugrunserver.py
+This will install the dependencies into the global / system
+Python install.
