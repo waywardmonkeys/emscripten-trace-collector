@@ -44,7 +44,7 @@
       id: {{ loop.index }},
       timestamp: {{ entry[0] }},
       channel: "{{ entry[1]|safe }}",
-      event: "{{ entry[2]|safe }}",
+      event: "{{ entry[2]|trim|replace('\n', '<br>')|safe }}",
       context: "{{ entry[3].full_name|safe }}",
     },
   {% endfor %}
