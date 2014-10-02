@@ -122,8 +122,10 @@ class HeapView(object):
           holes.append([lastAllocationEnd, allocationStart - lastAllocationEnd])
         lastAllocationEnd = allocationStart + allocation.size
     hole_data = {}
+    total_hole_size = 0
     for hole in holes:
       hole_size = hole[1]
+      total_hole_size += hole_size
       d = hole_data.setdefault(hole_size, {
         'id': hole_size,
         'size': hole_size,
@@ -136,6 +138,8 @@ class HeapView(object):
     holes.sort(lambda x,y: cmp(x['size'], y['size']))
     return {
       'holes': holes,
+      'fragmentation_percentage': (total_hole_size / float(lastAllocationEnd)) * 100,
+      'total_hole_size': total_hole_size,
       'last_allocation_top': lastAllocationEnd
     }
 

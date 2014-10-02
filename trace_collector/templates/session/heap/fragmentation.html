@@ -3,6 +3,16 @@
 {% block pagetitle %}Heap Fragmentation{% endblock %}
 {% block body %}
 <div id="grid-container">
+  <div id="heap-fragmentation-gauge" style="height: 120px;" class="container">
+    <div class="row">
+      <div class="col-md-3">
+        <div id="fragmentation-summary"></div>
+      </div>
+      <div class="col-md-9">
+        <div id="fragmentation-gauge"></div>
+      </div>
+    </div>
+  </div>
   <div id="heap-fragmentation" style="height: 100%;"></div>
   <div id="pager" style="height: 20px;"></div>
 </div>
@@ -59,12 +69,29 @@
   function resizeGridContainer() {
     $("#grid-container").height(
       $(window).height() -
+      $("#heap-fragmentation-gauge").outerHeight() -
       $("#navbar").outerHeight() -
       $("#page-header").outerHeight() - 105
     );
     grid.resizeCanvas();
   }
 
+  var gauge = c3.generate({
+    bindto: '#fragmentation-gauge',
+    size: {
+      height: 120
+    },
+    data: {
+      columns: [['Fragmentation', 0]],
+      type: 'gauge'
+    },
+    color: {
+        pattern: ['#60B044', '#F6C600', '#F97600', '#FF0000'], // the three color levels for the percentage values.
+        threshold: {
+            values: [10, 30, 50, 100]
+        }
+    }
+  });
 
   resizeGridContainer();
   $(window).resize(resizeGridContainer);
@@ -74,6 +101,12 @@
     dataView.beginUpdate();
     dataView.setItems(data);
     dataView.endUpdate();
+
+    $("#fragmentation-summary").html("<p>Out of " + response.data.last_allocation_top + " bytes allocated, " + response.data.total_hole_size + " is in holes.");
+
+    gauge.load({
+      columns: [['Fragmentation', response.data.fragmentation_percentage + 1]]
+    });
   });
 </script>
 {% endblock %}
