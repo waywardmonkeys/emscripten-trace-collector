@@ -1,0 +1,168 @@
+{% extends "session/layout.html" %}
+{% set active_page = "execution-contexts" %}
+{% block pagetitle %}Execution Contexts{% endblock %}
+{% block body %}
+<div id="grid-container">
+  <div id="frames" style="height: 100%;"></div>
+  <div id="pager" style="height:20px;"></div>
+</div>
+<script type="text/javascript">
+  function PosNegFormatter(row, cell, value, columnDef, dataContext) {
+    if (value > 0) {
+      return "<span class='text-danger'>" + value.toString() + "</span>";
+    } else if (value < 0) {
+      return "<span class='text-success'>" + value.toString() + "</span>";
+    } else {
+      return "";
+    }
+  }
+
+  function NonZeroFormatter(row, cell, value, columnDef, dataContext) {
+    return value ? value.toString() : '';
+  }
+
+  function MillisecondFormatter(row, cell, value, columnDef, dataContext) {
+    return value.toFixed(3).toString() + ' ms'
+  }
+
+  function ContextNameFormatter(row, cell, value, columnDef, dataContext) {
+    value = value.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    var spacer = "<span style='display:inline-block;height:1px;width:" + (15 * dataContext["indent"]) + "px'></span>";
+    if (dataContext['has_children']) {
+      if (dataContext._collapsed) {
+        return spacer + " <span class='toggle expand'></span>&nbsp;" + value;
+      } else {
+        return spacer + " <span class='toggle collapse'></span>&nbsp;" + value;
+      }
+    } else {
+      return spacer + " <span class='toggle'></span>&nbsp;" + value;
+    }
+  }
+
+  var columns = [
+    {id: 'name', name: 'Name', field: 'name',
+     width: 200, maxWidth: 250,
+     formatter: ContextNameFormatter,
+     cssClass: 'text-left'},
+    {id: 'times_entered', name: 'Hit Count', field: 'times_entered',
+     width: 120,
+     cssClass: 'text-right'},
+    {id: 'self_time_elapsed', name: 'Self ms', field: 'self_time_elapsed',
+     width: 120,
+     formatter: MillisecondFormatter,
+     cssClass: 'text-right'},
+    {id: 'total_time_elapsed', name: 'Totalms', field: 'total_time_elapsed',
+     width: 120,
+     formatter: MillisecondFormatter,
+     cssClass: 'text-right'},
+    {id: 'delta_bytes', name: '&plusmn; Bytes', field: 'delta_bytes',
+     formatter: PosNegFormatter,
+     cssClass: 'text-right'},
+    {id: 'alloc_count', name: 'Alloc #', field: 'alloc_count',
+     formatter: NonZeroFormatter,
+     cssClass: 'text-right'},
+    {id: 'alloc_bytes', name: 'Alloc Bytes', field: 'alloc_bytes',
+     formatter: NonZeroFormatter,
+     cssClass: 'text-right'},
+    {id: 'free_count', name: 'Free #', field: 'free_count',
+     formatter: NonZeroFormatter,
+     cssClass: 'text-right'},
+    {id: 'free_bytes', name: 'Free Bytes', field: 'free_bytes',
+     formatter: NonZeroFormatter,
+     cssClass: 'text-right'},
+  ];
+
+  var options = {
+    enableCellNavigation: true,
+    enableColumnReorder: false
+  };
+
+  var data = [];
+
+  var dataView = new Slick.Data.DataView({ inlineFilters: true });
+  var grid = new Slick.Grid("#frames", dataView, columns, options);
+  grid.setSelectionModel(new Slick.RowSelectionModel());
+  var pager = new Slick.Controls.Pager(dataView, grid, $("#pager"));
+
+  grid.onSort.subscribe(function(e, args) {
+    var comparer = function(a, b) {
+      return (a[args.sortCol.field] > b[args.sortCol.field]) ? 1 : -1;
+    }
+    dataView.sort(comparer, args.sortAsc);
+  });
+
+  dataView.onRowCountChanged.subscribe(function (e, args) {
+    grid.updateRowCount();
+    grid.render();
+  });
+
+  dataView.onRowsChanged.subscribe(function (e, args) {
+    grid.invalidateRows(args.rows);
+    grid.render();
+  });
+
+  function contextFilter(item, args) {
+    if (item.parent != null) {
+      var parent = item.parent;
+      while (parent) {
+        if (parent._collapsed) {
+          return false;
+        }
+        parent = parent.parent;
+      }
+    }
+    return true;
+  }
+
+  grid.onClick.subscribe(function (e, args) {
+    if ($(e.target).hasClass("toggle")) {
+      var item = dataView.getItem(args.row);
+      if (item) {
+        if (!item._collapsed) {
+          item._collapsed = true;
+        } else {
+          item._collapsed = false;
+        }
+        dataView.updateItem(item.id, item);
+      }
+      e.stopImmediatePropagation();
+    }
+  });
+
+  dataView.beginUpdate();
+  dataView.setItems(data);
+  dataView.setFilter(contextFilter);
+  dataView.endUpdate();
+
+  function resizeGridContainer() {
+    $("#grid-container").height(
+      $(window).height() -
+      $("#navbar").outerHeight() -
+      $("#page-header").outerHeight() - 105
+    );
+    grid.resizeCanvas();
+  }
+
+  resizeGridContainer();
+  $(window).resize(resizeGridContainer);
+
+  $.getJSON('/api/v1/session/{{ session.sessionID }}/execution/', function(response) {
+    data = [];
+    var parentMap = {};
+    // Fix up parent references
+    $.each(response.data, function(key, entry) {
+      parentMap[entry['id']] = entry;
+      if (entry['parent_id']) {
+        entry['parent'] = parentMap[entry['parent_id']];
+      } else {
+        entry['parent'] =  null;
+      }
+      data.push(entry);
+    });
+    dataView.beginUpdate();
+    dataView.setItems(data);
+    dataView.setFilter(contextFilter);
+    dataView.endUpdate();
+  });
+</script>
+{% endblock %}

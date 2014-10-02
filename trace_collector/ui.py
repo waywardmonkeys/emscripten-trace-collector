@@ -51,6 +51,14 @@ def session_heap_fragmentation(sessionID):
   else:
     abort(404)
 
+@app.route('/session/<sessionID>/execution/')
+def session_execution_contexts(sessionID):
+  session = sessions.session(sessionID)
+  if session:
+    return render_template('session/execution.html', session=session)
+  else:
+    abort(404)
+
 @app.route('/session/<sessionID>/log_messages/')
 def session_log_messages(sessionID):
   session = sessions.session(sessionID)

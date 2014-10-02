@@ -73,3 +73,14 @@ def session_heap_fragmentation_api(sessionID):
     })
   else:
     abort(404)
+
+@app.route('/api/v1/session/<sessionID>/execution/')
+@crossdomain(origin='*')
+def session_execution_contexts_api(sessionID):
+  session = sessions.session(sessionID)
+  if session:
+    return jsonify({
+     'data': session.get_flattened_context_data()
+    })
+  else:
+    abort(404)

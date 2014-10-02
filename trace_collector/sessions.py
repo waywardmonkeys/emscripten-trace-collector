@@ -24,6 +24,7 @@ def session(sessionID):
 class Session(object):
   def __init__(self, sessionID):
     self.FRAME_ID = 0
+    self.CONTEXT_ID = 0
     self.sessionID = sessionID
     self.name = sessionID
     self.application = 'unknown'
@@ -37,7 +38,7 @@ class Session(object):
     self.views['memory_layout'] = memory_layout.MemoryLayoutView()
     self.views['summary'] = summary.SummaryView(self.heapView)
     self.views['log_messages'] = log_messages.LogMessageView()
-    self.context = ContextNode(None, 'Root')
+    self.context = ContextNode(None, 'Root', self)
     ## Cached data ##
     self.peak_allocated = 0
 
@@ -45,6 +46,11 @@ class Session(object):
   def next_frame_id(self):
     self.FRAME_ID = self.FRAME_ID + 1
     return self.FRAME_ID
+
+
+  def next_context_id(self):
+    self.CONTEXT_ID = self.CONTEXT_ID + 1
+    return self.CONTEXT_ID
 
 
   def update(self, entry):
@@ -60,7 +66,7 @@ class Session(object):
     self.entries.append(entry)
     ### Update context ###
     if entry[0] == events.ENTER_CONTEXT:
-      self.context = self.context.get_child(entry[2])
+      self.context = self.context.get_child(entry[2], self)
       self.context.enter(entry[1])
     elif entry[0] == events.EXIT_CONTEXT:
       self.context.exit(entry[1])
@@ -105,6 +111,15 @@ class Session(object):
   def update_cached_data(self):
     self.peak_allocated = self.get_view('summary').peak_allocated
 
+  def get_flattened_context_data(self):
+    contexts = []
+    self.add_context_data(contexts, self.context, 0)
+    return contexts
+
+  def add_context_data(self, contexts, context, indent):
+    contexts.append(context.get_flattened_data(indent))
+    for child in context.children:
+      self.add_context_data(contexts, child, indent + 1)
 
 class SessionError(object):
   __slots__ = ['timestamp', 'error', 'callstack']
@@ -155,12 +170,13 @@ class SessionFrame(object):
 
 class ContextNode(object):
   __slots__ = [
-    'parent', 'name', 'full_name', 'children',
-    'last_enter_timestamp', 'times_entered', 'total_time_elapsed',
-    'alloc_count', 'alloc_bytes', 'free_count', 'free_bytes',
-    'delta_bytes'
+    'id', 'parent', 'name', 'full_name', 'children',
+    'last_enter_timestamp', 'times_entered', 'self_time_elapsed',
+    'total_time_elapsed', 'alloc_count', 'alloc_bytes', 'free_count',
+    'free_bytes', 'delta_bytes'
   ]
-  def __init__(self, parent, name):
+  def __init__(self, parent, name, session):
+    self.id = session.next_context_id()
     self.parent = parent
     if parent:
       parent.children.append(self)
@@ -169,6 +185,7 @@ class ContextNode(object):
     self.full_name = self.build_full_name()
     self.last_enter_timestamp = 0
     self.times_entered = 0
+    self.self_time_elapsed = 0
     self.total_time_elapsed = 0
     self.alloc_count = 0
     self.alloc_bytes = 0
@@ -176,18 +193,18 @@ class ContextNode(object):
     self.free_bytes = 0
     self.delta_bytes = 0
 
-  def get_child(self, name):
+  def get_child(self, name, session):
      for child in self.children:
        if child.name == name:
          return child
-     return ContextNode(self, name)
+     return ContextNode(self, name, session)
 
   def enter(self, timestamp):
     self.times_entered = self.times_entered + 1
     self.last_enter_timestamp = timestamp
 
   def exit(self, timestamp):
-    self.total_time_elapsed = self.total_time_elapsed + (timestamp - self.last_enter_timestamp)
+    self.self_time_elapsed += (timestamp - self.last_enter_timestamp)
     self.delta_bytes = self.alloc_bytes - self.free_bytes
 
   def update(self, entry, heapView):
@@ -219,3 +236,20 @@ class ContextNode(object):
   def build_full_name(self):
     stack = self.build_context_stack()
     return ' << '.join([node.name for node in stack])
+
+  def get_flattened_data(self, indent):
+    return {
+      'id': self.id,
+      'indent': indent,
+      'parent_id': self.parent and self.parent.id or 0,
+      'has_children': len(self.children) > 0,
+      'name': self.name,
+      'times_entered': self.times_entered,
+      'self_time_elapsed': self.self_time_elapsed,
+      'total_time_elapsed': self.total_time_elapsed,
+      'alloc_count': self.alloc_count,
+      'alloc_bytes': self.alloc_bytes,
+      'free_count': self.free_count,
+      'free_bytes': self.free_bytes,
+      'delta_bytes': self.delta_bytes
+    }
