@@ -1,0 +1,86 @@
+{% extends "session/layout.html" %}
+{% set active_page = "heap-size" %}
+{% block pagetitle %}Heap Objects by Size{% endblock %}
+{% block body %}
+<div id="grid-container">
+  <div id="heap-objects-by-size" style="height: 100%;"></div>
+  <div id="pager" style="height: 20px;"></div>
+</div>
+<script type="text/javascript">
+  var columns = [
+    {id: 'size', name: 'Size', field: 'size',
+      sortable: true,
+      minWidth: 50, maxWidth: 100,
+      cssClass: 'text-right'},
+    {id: 'count_all', name: 'Count (all)', field: 'count_all',
+      sortable: true,
+      minWidth: 50, maxWidth: 100,
+      cssClass: 'text-right'},
+    {id: 'count_live', name: 'Count (live)', field: 'count_live',
+      sortable: true,
+      minWidth: 50, maxWidth: 100,
+      cssClass: 'text-right'},
+    {id: 'bytes_all', name: 'Bytes (all)', field: 'bytes_all',
+      sortable: true,
+      minWidth: 50, maxWidth: 100,
+      cssClass: 'text-right'},
+    {id: 'bytes_live', name: 'Bytes (live)', field: 'bytes_live',
+      sortable: true,
+      minWidth: 50, maxWidth: 100,
+      cssClass: 'text-right'},
+  ];
+
+  var options = {
+    enableCellNavigation: true,
+    enableColumnReorder: false,
+    autoExpandColumns: true
+  };
+
+  var data = [];
+
+  var dataView = new Slick.Data.DataView({ inlineFilters: true });
+  var grid = new Slick.Grid("#heap-objects-by-size", dataView, columns, options);
+  grid.setSelectionModel(new Slick.RowSelectionModel());
+  var pager = new Slick.Controls.Pager(dataView, grid, $("#pager"));
+
+  grid.onSort.subscribe(function(e, args) {
+    var comparer = function(a, b) {
+      return (a[args.sortCol.field] > b[args.sortCol.field]) ? 1 : -1;
+    }
+    dataView.sort(comparer, args.sortAsc);
+  });
+
+  dataView.onRowCountChanged.subscribe(function (e, args) {
+    grid.updateRowCount();
+    grid.render();
+  });
+
+  dataView.onRowsChanged.subscribe(function (e, args) {
+    grid.invalidateRows(args.rows);
+    grid.render();
+  });
+
+  dataView.beginUpdate();
+  dataView.setItems(data);
+  dataView.endUpdate();
+
+  function resizeGridContainer() {
+    $("#grid-container").height(
+      $(window).height() -
+      $("#navbar").outerHeight() -
+      $("#page-header").outerHeight() - 105
+    );
+    grid.resizeCanvas();
+  }
+
+
+  resizeGridContainer();
+  $(window).resize(resizeGridContainer);
+
+  $.getJSON('/api/v1/session/{{ session.sessionID }}/heap/by_size/', function(response) {
+    dataView.beginUpdate();
+    dataView.setItems(response.data);
+    dataView.endUpdate();
+  });
+</script>
+{% endblock %}

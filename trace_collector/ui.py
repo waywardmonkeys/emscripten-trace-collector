@@ -19,19 +19,35 @@ def session_overview(sessionID):
   else:
     abort(404)
 
-@app.route('/session/<sessionID>/heap/')
-def session_heap(sessionID):
-  session = sessions.session(sessionID)
-  if session:
-    return render_template('session/heap.html', session=session)
-  else:
-    abort(404)
-
 @app.route('/session/<sessionID>/heap/events/')
 def session_heap_events(sessionID):
   session = sessions.session(sessionID)
   if session:
     return render_template('session/heap/events.html', session=session)
+  else:
+    abort(404)
+
+@app.route('/session/<sessionID>/heap/size/')
+def session_heap_size(sessionID):
+  session = sessions.session(sessionID)
+  if session:
+    return render_template('session/heap/size.html', session=session)
+  else:
+    abort(404)
+
+@app.route('/session/<sessionID>/heap/type/')
+def session_heap_type(sessionID):
+  session = sessions.session(sessionID)
+  if session:
+    return render_template('session/heap/type.html', session=session)
+  else:
+    abort(404)
+
+@app.route('/session/<sessionID>/heap/fragmentation/')
+def session_heap_fragmentation(sessionID):
+  session = sessions.session(sessionID)
+  if session:
+    return render_template('session/heap/fragmentation.html', session=session)
   else:
     abort(404)
 

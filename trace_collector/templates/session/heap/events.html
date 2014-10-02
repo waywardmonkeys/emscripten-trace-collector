@@ -194,14 +194,12 @@
 
   $.getJSON('/api/v1/session/{{ session.sessionID }}/heap/events/', function(response) {
     var sizeSliderTicks = 20, timeSliderTicks = 50;
-    var data = [];
+    var data = response.data;
     var unique = {};
     var distinct_types = [];
     var minimumSize = 0, maximumSize = 0;
     $.each(response.data, function(key, entry) {
       maximumSize = Math.max(entry['size'] || 0, maximumSize);
-      entry['id'] = entry['event_id'];
-      data.push(entry);
       if (entry.type && !unique[entry.type]) {
         distinct_types.push(entry.type);
         unique[entry.type] = true;

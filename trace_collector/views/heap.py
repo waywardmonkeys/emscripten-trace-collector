@@ -20,7 +20,7 @@ class HeapView(object):
     if entry[0] == events.ALLOCATE:
       address = entry[2]
       size = entry[3]
-      he = HeapEntry(session.FRAME_ID, self.next_event_id(), EVENT_ALLOCATE, entry[1], address, size, session.context)
+      he = HeapEntry(self.next_event_id(), session.FRAME_ID, EVENT_ALLOCATE, entry[1], address, size, session.context)
       self.allocated_memory = self.allocated_memory + size
       he.allocated_memory = self.allocated_memory
       self.entries.append(he)
@@ -31,15 +31,15 @@ class HeapView(object):
     elif entry[0] == events.FREE:
       timestamp = entry[1]
       address = entry[2]
-      freeEntry = HeapEntry(session.FRAME_ID, self.next_event_id(), EVENT_FREE, timestamp, address, 0, session.context)
+      freeEntry = HeapEntry(self.next_event_id(), session.FRAME_ID, EVENT_FREE, timestamp, address, 0, session.context)
       self.entries.append(freeEntry)
       oldEntry = self.entries_by_address.get(address)
       if oldEntry:
         freeEntry.size = oldEntry.size
         oldEntry.lifetime = timestamp - oldEntry.timestamp
         freeEntry.lifetime = oldEntry.lifetime
-        oldEntry.matching_event_id = freeEntry.event_id
-        freeEntry.matching_event_id = oldEntry.event_id
+        oldEntry.matching_event_id = freeEntry.id
+        freeEntry.matching_event_id = oldEntry.id
         freeEntry.type = oldEntry.type
         del self.entries_by_address[address]
         self.allocated_memory = self.allocated_memory - freeEntry.size
@@ -59,9 +59,60 @@ class HeapView(object):
       return entry.size
     return 0
 
-  def heap_layout(self):
+  def heap_allocation_data_by_type(self):
+    type_data = {}
+    allocation_entries = [e for e in self.entries if e.event == EVENT_ALLOCATE]
+    id = 0
+    for e in allocation_entries:
+      d = type_data.setdefault(e.type, {
+        'id': 0,
+        'type': e.type,
+        'count_all': 0,
+        'count_live': 0,
+        'total_bytes_all': 0,
+        'total_bytes_live': 0
+      })
+      if not d['id']:
+        d['id'] = id
+        id += 1
+      d['count_all'] += 1
+      d['total_bytes_all'] += e.size
+      if not e.matching_event_id:
+        d['count_live'] += 1
+        d['total_bytes_live'] += e.size
+    for d in type_data.values():
+      d['average_bytes_all'] = int(d['total_bytes_all'] / float(d['count_all']))
+      d['average_bytes_live'] = int(d['total_bytes_live'] / float(d['count_live']))
+    types = type_data.values()
+    # Use negation to reverse the sort
+    types.sort(lambda x,y: cmp(-x['count_all'], -y['count_all']))
+    return types
+
+  def heap_allocation_data_by_size(self):
+    size_data = {}
+    allocation_entries = [e for e in self.entries if e.event == EVENT_ALLOCATE]
+    for e in allocation_entries:
+      d = size_data.setdefault(e.size, {
+        'id': e.size,
+        'size': e.size,
+        'count_all': 0,
+        'count_live': 0,
+        'bytes_all': 0,
+        'bytes_live': 0
+      })
+      d['count_all'] += 1
+      d['bytes_all'] += e.size
+      if not e.matching_event_id:
+        d['count_live'] += 1
+        d['bytes_live'] += e.size
+    sizes = size_data.values()
+    sizes.sort(lambda x,y: cmp(x['size'], y['size']))
+    return sizes
+
+  def heap_fragmentation_data(self):
     allocations = self.entries_by_address.values()
     holes = []
+    lastAllocationEnd = 0
     if len(allocations) > 1:
       allocations.sort(lambda x,y: cmp(x.address, y.address))
       lastAllocationEnd = allocations[0].address
@@ -70,20 +121,32 @@ class HeapView(object):
         if lastAllocationEnd < allocationStart:
           holes.append([lastAllocationEnd, allocationStart - lastAllocationEnd])
         lastAllocationEnd = allocationStart + allocation.size
+    hole_data = {}
+    for hole in holes:
+      hole_size = hole[1]
+      d = hole_data.setdefault(hole_size, {
+        'id': hole_size,
+        'size': hole_size,
+        'count': 0,
+        'bytes': 0
+      })
+      d['count'] += 1
+      d['bytes'] += hole_size
+    holes = hole_data.values()
+    holes.sort(lambda x,y: cmp(x['size'], y['size']))
     return {
-      'all_allocations': [e for e in self.entries if e.event == EVENT_ALLOCATE],
-      'live_allocations': allocations,
-      'holes': holes
+      'holes': holes,
+      'last_allocation_top': lastAllocationEnd
     }
 
 class HeapEntry(json.Serializable):
   __slots__ = [
-    'frame_id', 'event_id', 'event', 'timestamp', 'address', 'size', 'type',
+    'id', 'frame_id', 'event', 'timestamp', 'address', 'size', 'type',
     'context', 'lifetime', 'matching_event_id', 'allocated_memory'
   ]
-  def __init__(self, frame_id, event_id, event, timestamp, address, size, context):
+  def __init__(self, id, frame_id, event, timestamp, address, size, context):
+    self.id = id
     self.frame_id = frame_id
-    self.event_id = event_id
     self.event = event
     self.timestamp = timestamp
     self.address = address
@@ -96,8 +159,8 @@ class HeapEntry(json.Serializable):
 
   def serialize(self):
     return {
+      'id': self.id,
       'frame_id': self.frame_id,
-      'event_id': self.event_id,
       'event': self.event,
       'timestamp': self.timestamp,
       'address': self.address,

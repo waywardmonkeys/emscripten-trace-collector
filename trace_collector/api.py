@@ -41,11 +41,35 @@ def session_heap_events_api(sessionID):
   else:
     abort(404)
 
-@app.route('/api/v1/session/<sessionID>/heap/layout/')
+@app.route('/api/v1/session/<sessionID>/heap/by_type/')
 @crossdomain(origin='*')
-def session_heap_layout_api(sessionID):
+def session_heap_by_type_api(sessionID):
   session = sessions.session(sessionID)
   if session:
-    return jsonify(session.get_view('heap').heap_layout())
+    return jsonify({
+     'data': session.get_view('heap').heap_allocation_data_by_type()
+    })
+  else:
+    abort(404)
+
+@app.route('/api/v1/session/<sessionID>/heap/by_size/')
+@crossdomain(origin='*')
+def session_heap_by_size_api(sessionID):
+  session = sessions.session(sessionID)
+  if session:
+    return jsonify({
+     'data': session.get_view('heap').heap_allocation_data_by_size()
+    })
+  else:
+    abort(404)
+
+@app.route('/api/v1/session/<sessionID>/heap/fragmentation/')
+@crossdomain(origin='*')
+def session_heap_fragmentation_api(sessionID):
+  session = sessions.session(sessionID)
+  if session:
+    return jsonify({
+     'data': session.get_view('heap').heap_fragmentation_data()
+    })
   else:
     abort(404)
