@@ -27,11 +27,11 @@ def session_heap(sessionID):
   else:
     abort(404)
 
-@app.route('/session/<sessionID>/heapevents/')
-def session_heapevents(sessionID):
+@app.route('/session/<sessionID>/heap/events/')
+def session_heap_events(sessionID):
   session = sessions.session(sessionID)
   if session:
-    return render_template('session/heapevents.html', session=session)
+    return render_template('session/heap/events.html', session=session)
   else:
     abort(404)
 
