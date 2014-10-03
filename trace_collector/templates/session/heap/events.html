@@ -118,8 +118,13 @@
     if (item['size'] > args.maximumSize) {
       return false;
     }
-    if (args.datatype_filter && (item['type'] != args.datatype_filter)) {
-      return false;
+    if (args.datatype_filter) {
+      if (!item['type']) {
+        return false;
+      }
+      if (item['type'].indexOf(args.datatype_filter) == -1) {
+        return false;
+      }
     }
     return true;
   }
@@ -168,15 +173,14 @@
     suffix: 'ms'
   });
 
-  $("#datatype-filter").autocomplete({
-    source: ["N/A"],
-    change: function(event, ui) {
-      updateFilter();
-    },
-    search: function(event, ui) {
-      updateFilter();
+  $("#datatype-filter").keyup(function (e) {
+    // clear on Esc
+    if (e.which == 27) {
+      this.value = "";
     }
-  });
+
+    updateFilter();
+  })
 
   function resizeGridContainer() {
     $("#grid-container").height(
@@ -188,22 +192,15 @@
     grid.resizeCanvas();
   }
 
-
   resizeGridContainer();
   $(window).resize(resizeGridContainer);
 
   $.getJSON('/api/v1/session/{{ session.sessionID }}/heap/events/', function(response) {
     var sizeSliderTicks = 20, timeSliderTicks = 50;
     var data = response.data;
-    var unique = {};
-    var distinct_types = [];
     var minimumSize = 0, maximumSize = 0;
     $.each(response.data, function(key, entry) {
       maximumSize = Math.max(entry['size'] || 0, maximumSize);
-      if (entry.type && !unique[entry.type]) {
-        distinct_types.push(entry.type);
-        unique[entry.type] = true;
-      }
     });
     maximumSize = Math.ceil(maximumSize / sizeSliderTicks) * sizeSliderTicks;
     $("#size-slider")
@@ -228,8 +225,6 @@
         step: (maximumTimestamp - minimumTimestamp) / timeSliderTicks,
         suffix: 'ms'
       });
-
-    $("#datatype-filter").autocomplete("option", "source", distinct_types);
 
     dataView.beginUpdate();
     dataView.setItems(data);
