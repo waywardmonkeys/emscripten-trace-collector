@@ -81,8 +81,14 @@ class HeapView(object):
         d['count_live'] += 1
         d['total_bytes_live'] += e.size
     for d in type_data.values():
-      d['average_bytes_all'] = int(d['total_bytes_all'] / float(d['count_all']))
-      d['average_bytes_live'] = int(d['total_bytes_live'] / float(d['count_live']))
+      if d['count_all'] > 0:
+        d['average_bytes_all'] = int(d['total_bytes_all'] / float(d['count_all']))
+      else:
+        d['average_bytes_all'] = 0
+      if d['count_live'] > 0:
+        d['average_bytes_live'] = int(d['total_bytes_live'] / float(d['count_live']))
+      else:
+        d['average_bytes_live'] = 0
     types = type_data.values()
     # Use negation to reverse the sort
     types.sort(lambda x,y: cmp(-x['count_all'], -y['count_all']))
