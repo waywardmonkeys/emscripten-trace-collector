@@ -52,6 +52,12 @@ class HeapView(object):
         he.type = entry[2]
       else:
         print 'NO ADDRESS MAPPING FOUND FOR %s TO ANNOTATE TYPE "%s"' % (entry[1], entry[2])
+    elif entry[0] == events.ASSOCIATE_STORAGE_SIZE:
+      he = self.entries_by_address.get(entry[1])
+      if he:
+        he.associated_storage_size = entry[2]
+      else:
+        print 'NO ADDRESS MAPPING FOUND FOR %s TO ASSOCIATE STORAGE SIZE "%s"' % (entry[1], entry[2])
 
   def size_for_address(self, address):
     entry = self.entries_by_address.get(address)
@@ -70,25 +76,30 @@ class HeapView(object):
         'count_all': 0,
         'count_live': 0,
         'total_bytes_all': 0,
-        'total_bytes_live': 0
+        'total_bytes_live': 0,
+        'total_storage_size_all': 0,
+        'total_storage_size_live': 0
       })
       if not d['id']:
         d['id'] = id
         id += 1
       d['count_all'] += 1
       d['total_bytes_all'] += e.size
+      d['total_storage_size_all'] += e.associated_storage_size
       if not e.matching_event_id:
         d['count_live'] += 1
         d['total_bytes_live'] += e.size
+        d['total_storage_size_live'] += e.associated_storage_size
+    def avg(total, count):
+      if count > 0:
+        return int(total / float(count))
+      else:
+        return 0
     for d in type_data.values():
-      if d['count_all'] > 0:
-        d['average_bytes_all'] = int(d['total_bytes_all'] / float(d['count_all']))
-      else:
-        d['average_bytes_all'] = 0
-      if d['count_live'] > 0:
-        d['average_bytes_live'] = int(d['total_bytes_live'] / float(d['count_live']))
-      else:
-        d['average_bytes_live'] = 0
+      d['average_bytes_all'] = avg(d['total_bytes_all'], d['count_all'])
+      d['average_bytes_live'] = avg(d['total_bytes_live'], d['count_live'])
+      d['average_storage_size_all'] = avg(d['total_storage_size_all'], d['count_all'])
+      d['average_storage_size_live'] = avg(d['total_storage_size_live'], d['count_live'])
     types = type_data.values()
     # Use negation to reverse the sort
     types.sort(lambda x,y: cmp(-x['count_all'], -y['count_all']))
@@ -152,7 +163,8 @@ class HeapView(object):
 class HeapEntry(json.Serializable):
   __slots__ = [
     'id', 'frame_id', 'event', 'timestamp', 'address', 'size', 'type',
-    'context', 'lifetime', 'matching_event_id', 'allocated_memory'
+    'context', 'lifetime', 'matching_event_id', 'allocated_memory',
+    'associated_storage_size'
   ]
   def __init__(self, id, frame_id, event, timestamp, address, size, context):
     self.id = id
@@ -166,6 +178,7 @@ class HeapEntry(json.Serializable):
     self.lifetime = None
     self.matching_event_id = None
     self.allocated_memory = 0
+    self.associated_storage_size = 0
 
   def serialize(self):
     return {
@@ -179,5 +192,6 @@ class HeapEntry(json.Serializable):
       'context': self.context.full_name,
       'lifetime': self.lifetime,
       'matching_event_id': self.matching_event_id,
-      'allocated_memory': self.allocated_memory
+      'allocated_memory': self.allocated_memory,
+      'associated_storage_size': self.associated_storage_size
     }

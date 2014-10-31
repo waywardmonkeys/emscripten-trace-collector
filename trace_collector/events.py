@@ -1,6 +1,7 @@
 ALLOCATE = 'allocate'
 ANNOTATE_TYPE = 'annotate-type'
 APPLICATION_NAME = 'application-name'
+ASSOCIATE_STORAGE_SIZE = 'associate-storage-size'
 ENTER_CONTEXT = 'enter-context'
 EXIT_CONTEXT = 'exit-context'
 FRAME_END = 'frame-end'
