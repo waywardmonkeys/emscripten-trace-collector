@@ -1,5 +1,5 @@
 import os
-from flask import abort, jsonify, request, send_from_directory
+from flask import abort, jsonify, make_response, request, send_from_directory
 from trace_collector import app, sessions
 from trace_collector.decorators import crossdomain
 
@@ -46,9 +46,15 @@ def session_heap_events_api(sessionID):
 def session_heap_by_type_api(sessionID):
   session = sessions.session(sessionID)
   if session:
-    return jsonify({
-     'data': session.get_view('heap').heap_allocation_data_by_type()
-    })
+    if request.args.get('format') == 'csv':
+      csv_data = session.get_view('heap').heap_allocation_data_by_type(format='csv')
+      response = make_response(csv_data)
+      response.headers["Content-Disposition"] = "attachment; filename=by_type_%s.csv" % sessionID
+      return response
+    else:
+      return jsonify({
+       'data': session.get_view('heap').heap_allocation_data_by_type()
+      })
   else:
     abort(404)
 

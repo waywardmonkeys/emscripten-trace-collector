@@ -1,4 +1,6 @@
 from trace_collector import events, json
+import csv
+import cStringIO
 
 EVENT_ALLOCATE = 'allocate'
 EVENT_FREE = 'free'
@@ -65,7 +67,7 @@ class HeapView(object):
       return entry.size
     return 0
 
-  def heap_allocation_data_by_type(self):
+  def heap_allocation_data_by_type(self, format=None):
     type_data = {}
     allocation_entries = [e for e in self.entries if e.event == EVENT_ALLOCATE]
     id = 0
@@ -103,6 +105,27 @@ class HeapView(object):
     types = type_data.values()
     # Use negation to reverse the sort
     types.sort(lambda x,y: cmp(-x['count_all'], -y['count_all']))
+    if format == 'csv':
+      csv_data = cStringIO.StringIO()
+      fields = [
+        'id',
+        'type',
+        'count_all',
+        'count_live',
+        'total_bytes_all',
+        'total_bytes_live',
+        'average_bytes_all',
+        'average_bytes_live',
+        'total_storage_size_all',
+        'total_storage_size_live',
+        'average_storage_size_all',
+        'average_storage_size_live',
+      ]
+      writer = csv.DictWriter(csv_data, fields)
+      writer.writeheader()
+      for d in types:
+        writer.writerow(d)
+      return csv_data.getvalue()
     return types
 
   def heap_allocation_data_by_size(self):

@@ -3,6 +3,9 @@
 {% block pagetitle %}Heap Objects by Type{% endblock %}
 {% block body %}
 <div id="grid-container">
+  <div id="table-controls">
+    <a class="btn btn-default" href="/api/v1/session/{{ session.sessionID }}/heap/by_type/?format=csv">Download as CSV</a>
+  </div>
   <div id="heap-objects-by-type" style="height: 100%;"></div>
   <div id="pager" style="height: 20px;"></div>
 </div>
@@ -91,6 +94,7 @@
   function resizeGridContainer() {
     $("#grid-container").height(
       $(window).height() -
+      $("#table-controls").outerHeight(true) -
       $("#navbar").outerHeight() -
       $("#page-header").outerHeight() - 105
     );
