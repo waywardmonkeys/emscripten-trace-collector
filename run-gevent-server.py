@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from trace_collector import app
+import sys
 
 if (sys.version_info > (3, 0)):
     from wsgiref.simple_server import make_server
