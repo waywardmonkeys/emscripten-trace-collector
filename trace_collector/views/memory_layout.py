@@ -12,14 +12,13 @@ class MemoryLayoutView(object):
 
 class MemoryLayoutData(object):
   __slots__ = [
-    'timestamp', 'static_base', 'static_top',
+    'timestamp', 'static_base',
     'stack_base', 'stack_top', 'stack_max',
     'dynamic_base', 'dynamic_top', 'total_memory'
   ]
   def __init__(self, timestamp, data):
     self.timestamp = timestamp
     self.static_base = data['static_base']
-    self.static_top = data['static_top']
     self.stack_base = data['stack_base']
     self.stack_top = data['stack_top']
     self.stack_max = data['stack_max']

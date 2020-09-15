@@ -62,10 +62,6 @@
     currentMemoryLayoutData.addColumn('number', 'Bytes');
     {% if memory_layout.current %}
     currentMemoryLayoutData.addRows([
-      ['Static', {
-        v: {{ memory_layout.current.static_top - memory_layout.current.static_base }},
-        f: '{{ (memory_layout.current.static_top - memory_layout.current.static_base)|filesizeformat(True) }}'
-      }],
       ['Stack', {
         v: {{ memory_layout.current.stack_top - memory_layout.current.stack_base }},
         f: '{{ (memory_layout.current.stack_top - memory_layout.current.stack_base)|filesizeformat(True) }}'
@@ -106,7 +102,6 @@
     {% for entry in memory_layout.snapshots %}
       [
         {v: {{ entry.timestamp }}, f: '{{ entry.timestamp|round(3) }}ms'},
-        {v: {{ entry.static_top - entry.static_base }},   f: '{{ (entry.static_top - entry.static_base)|filesizeformat(True) }}'},
         {v: {{ entry.stack_top - entry.stack_base }},     f: '{{ (entry.stack_top - entry.stack_base)|filesizeformat(True) }}'},
         {v: {{ entry.stack_max - entry.stack_top }},      f: '{{ (entry.stack_max - entry.stack_top)|filesizeformat(True) }}'},
         {v: {{ entry.dynamic_top - entry.dynamic_base }}, f: '{{ (entry.dynamic_top - entry.dynamic_base)|filesizeformat(True) }}'},

@@ -149,7 +149,7 @@ class HeapView(object):
         d['count_live'] += 1
         d['bytes_live'] += e.size
     sizes = size_data.values()
-    sizes.sort(lambda x,y: cmp(x['size'], y['size']))
+    sizes_sorted = sorted(sizes, cmp=lambda x,y: cmp(x['size'], y['size']))
     return sizes
 
   def heap_fragmentation_data(self):
