@@ -1,9 +1,6 @@
 from trace_collector import events, json
 import csv
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
+from io import StringIO
 
 EVENT_ALLOCATE = 'allocate'
 EVENT_FREE = 'free'
