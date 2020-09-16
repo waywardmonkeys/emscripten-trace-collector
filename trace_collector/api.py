@@ -22,7 +22,7 @@ def upload_data():
       sessions.add_entry(sessionID, entry)
     return jsonify([])
   else:
-    print 'WRONG DATA VERSION: %s' % dataVersion
+    print('WRONG DATA VERSION: %s' % dataVersion)
     abort(500)
 
 

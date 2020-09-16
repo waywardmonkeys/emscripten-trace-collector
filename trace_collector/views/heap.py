@@ -1,6 +1,6 @@
 from trace_collector import events, json
 import csv
-import cStringIO
+from io import StringIO
 
 EVENT_ALLOCATE = 'allocate'
 EVENT_FREE = 'free'
@@ -53,13 +53,13 @@ class HeapView(object):
       if he:
         he.type = entry[2]
       else:
-        print 'NO ADDRESS MAPPING FOUND FOR %s TO ANNOTATE TYPE "%s"' % (entry[1], entry[2])
+        print('NO ADDRESS MAPPING FOUND FOR %s TO ANNOTATE TYPE "%s"' % (entry[1], entry[2]))
     elif entry[0] == events.ASSOCIATE_STORAGE_SIZE:
       he = self.entries_by_address.get(entry[1])
       if he:
         he.associated_storage_size = entry[2]
       else:
-        print 'NO ADDRESS MAPPING FOUND FOR %s TO ASSOCIATE STORAGE SIZE "%s"' % (entry[1], entry[2])
+        print('NO ADDRESS MAPPING FOUND FOR %s TO ASSOCIATE STORAGE SIZE "%s"' % (entry[1], entry[2]))
 
   def size_for_address(self, address):
     entry = self.entries_by_address.get(address)
@@ -106,7 +106,7 @@ class HeapView(object):
     # Use negation to reverse the sort
     types.sort(lambda x,y: cmp(-x['count_all'], -y['count_all']))
     if format == 'csv':
-      csv_data = cStringIO.StringIO()
+      csv_data = StringIO.StringIO()
       fields = [
         'id',
         'type',
@@ -146,7 +146,7 @@ class HeapView(object):
         d['count_live'] += 1
         d['bytes_live'] += e.size
     sizes = size_data.values()
-    sizes.sort(lambda x,y: cmp(x['size'], y['size']))
+    sizes_sorted = sorted(sizes, cmp=lambda x,y: cmp(x['size'], y['size']))
     return sizes
 
   def heap_fragmentation_data(self):
